@@ -473,6 +473,7 @@ class Isolate {
   // example if you are using V8 from within the body of a static initializer.
   // Safe to call multiple times.
   static void EnsureDefaultIsolate();
+  static void StaticTearDown();
 
   // Find the PerThread for this particular (isolate, thread) combination
   // If one does not yet exist, return null.

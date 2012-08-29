@@ -376,9 +376,21 @@ void Isolate::EnsureDefaultIsolate() {
   }
 }
 
+void Isolate::StaticTearDown() {
+	process_wide_mutex_->Lock();
+	delete thread_data_table_;
+	thread_data_table_ = NULL;
+	process_wide_mutex_->Unlock();
+	delete process_wide_mutex_;
+	process_wide_mutex_ = NULL;
+}
+
 struct StaticInitializer {
   StaticInitializer() {
     Isolate::EnsureDefaultIsolate();
+  }
+  ~StaticInitializer() {
+	Isolate::StaticTearDown();
   }
 } static_initializer;
 
@@ -1396,6 +1408,8 @@ Isolate::ThreadDataTable::ThreadDataTable()
     : list_(NULL) {
 }
 
+Isolate::ThreadDataTable::~ThreadDataTable() {
+}
 
 Isolate::PerIsolateThreadData*
     Isolate::ThreadDataTable::Lookup(Isolate* isolate,
