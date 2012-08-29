@@ -1652,6 +1652,15 @@ Isolate::~Isolate() {
   // Has to be called while counters_ are still alive.
   runtime_zone_.DeleteKeptSegment();
 
+  EntryStackItem * item = entry_stack_;
+  while (item)
+  {
+	  EntryStackItem * tmp = item;
+	  item = item->previous_item;
+	  delete tmp;
+  }
+  entry_stack_ = NULL;
+
   delete[] assembler_spare_buffer_;
   assembler_spare_buffer_ = NULL;
 
