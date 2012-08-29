@@ -1826,6 +1826,10 @@ void SamplerRegistry::SetUp() {
   }
 }
 
+void SamplerRegistry::TearDown() {
+	delete active_samplers_;
+	active_samplers_ = NULL;
+}
 
 bool SamplerRegistry::IterateActiveSamplers(VisitSampler func, void* param) {
   ScopedLock lock(active_samplers_mutex);

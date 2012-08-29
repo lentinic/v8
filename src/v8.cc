@@ -112,6 +112,7 @@ void V8::TearDown() {
   isolate->TearDown();
   delete isolate;
 
+  SamplerRegistry::TearDown();
   ElementsAccessor::TearDown();
   LOperand::TearDownCaches();
   RegisteredExtension::UnregisterAll();

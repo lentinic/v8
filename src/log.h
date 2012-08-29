@@ -463,6 +463,7 @@ class SamplerRegistry : public AllStatic {
   };
 
   static void SetUp();
+  static void TearDown();
 
   typedef void (*VisitSampler)(Sampler*, void*);
 
