@@ -1827,6 +1827,9 @@ void SamplerRegistry::SetUp() {
 }
 
 void SamplerRegistry::TearDown() {
+	delete active_samplers_mutex;
+	active_samplers_mutex = NULL;
+
 	delete active_samplers_;
 	active_samplers_ = NULL;
 }
