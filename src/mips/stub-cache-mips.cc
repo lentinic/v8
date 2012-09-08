@@ -2676,9 +2676,10 @@ Handle<Code> StoreStubCompiler::CompileStoreField(Handle<JSObject> object,
 
 
 Handle<Code> StoreStubCompiler::CompileStoreCallback(
-    Handle<JSObject> object,
-    Handle<AccessorInfo> callback,
-    Handle<String> name) {
+    Handle<String> name,
+    Handle<JSObject> receiver,
+    Handle<JSObject> holder,
+    Handle<AccessorInfo> callback) {
   // ----------- S t a t e -------------
   //  -- a0    : value
   //  -- a1    : receiver
@@ -2686,19 +2687,13 @@ Handle<Code> StoreStubCompiler::CompileStoreCallback(
   //  -- ra    : return address
   // -----------------------------------
   Label miss;
-
-  // Check that the map of the object hasn't changed.
-  __ CheckMap(a1, a3, Handle<Map>(object->map()), &miss,
-              DO_SMI_CHECK, ALLOW_ELEMENT_TRANSITION_MAPS);
-
-  // Perform global security token check if needed.
-  if (object->IsJSGlobalProxy()) {
-    __ CheckAccessGlobalProxy(a1, a3, &miss);
-  }
+  // Check that the maps haven't changed.
+  __ JumpIfSmi(a1, &miss, a3);
+  CheckPrototypes(receiver, a1, holder, a3, t0, t1, name, &miss);
 
   // Stub never generated for non-global objects that require access
   // checks.
-  ASSERT(object->IsJSGlobalProxy() || !object->IsAccessCheckNeeded());
+  ASSERT(holder->IsJSGlobalProxy() || !holder->IsAccessCheckNeeded());
 
   __ push(a1);  // Receiver.
   __ li(a3, Operand(callback));  // Callback info.
@@ -2961,6 +2956,43 @@ Handle<Code> LoadStubCompiler::CompileLoadCallback(
 }
 
 
+#undef __
+#define __ ACCESS_MASM(masm)
+
+
+void LoadStubCompiler::GenerateLoadViaGetter(MacroAssembler* masm,
+                                             Handle<JSFunction> getter) {
+  // ----------- S t a t e -------------
+  //  -- a0    : receiver
+  //  -- a2    : name
+  //  -- ra    : return address
+  // -----------------------------------
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+
+    if (!getter.is_null()) {
+      // Call the JavaScript getter with the receiver on the stack.
+      __ push(a0);
+      ParameterCount actual(0);
+      __ InvokeFunction(getter, actual, CALL_FUNCTION, NullCallWrapper(),
+                        CALL_AS_METHOD);
+    } else {
+      // If we generate a global code snippet for deoptimization only, remember
+      // the place to continue after deoptimization.
+      masm->isolate()->heap()->SetGetterStubDeoptPCOffset(masm->pc_offset());
+    }
+
+    // Restore context register.
+    __ lw(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  }
+  __ Ret();
+}
+
+
+#undef __
+#define __ ACCESS_MASM(masm())
+
+
 Handle<Code> LoadStubCompiler::CompileLoadViaGetter(
     Handle<String> name,
     Handle<JSObject> receiver,
@@ -2977,19 +3009,7 @@ Handle<Code> LoadStubCompiler::CompileLoadViaGetter(
   __ JumpIfSmi(a0, &miss);
   CheckPrototypes(receiver, a0, holder, a3, t0, a1, name, &miss);
 
-  {
-    FrameScope scope(masm(), StackFrame::INTERNAL);
-
-    // Call the JavaScript getter with the receiver on the stack.
-    __ push(a0);
-    ParameterCount actual(0);
-    __ InvokeFunction(getter, actual, CALL_FUNCTION, NullCallWrapper(),
-                      CALL_AS_METHOD);
-
-    // Restore context register.
-    __ lw(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
-  }
-  __ Ret();
+  GenerateLoadViaGetter(masm(), getter);
 
   __ bind(&miss);
   GenerateLoadMiss(masm(), Code::LOAD_IC);

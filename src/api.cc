@@ -537,13 +537,11 @@ Extension::Extension(const char* name,
     : name_(name),
       source_length_(source_length >= 0 ?
                      source_length :
-                     static_cast<int>(strlen(source))),
+                     (source ? static_cast<int>(strlen(source)) : 0)),
       source_(source, source_length_),
       dep_count_(dep_count),
       deps_(deps),
-      auto_enable_(false) {
-  CHECK(source);
-}
+      auto_enable_(false) { }
 
 
 v8::Handle<Primitive> Undefined() {
@@ -1542,7 +1540,7 @@ Local<Script> Script::New(v8::Handle<String> source,
                            isolate->global_context(),
                            NULL,
                            pre_data_impl,
-                           Utils::OpenHandle(*script_data),
+                           Utils::OpenHandle(*script_data, true),
                            i::NOT_NATIVES_CODE);
     has_pending_exception = result.is_null();
     EXCEPTION_BAILOUT_CHECK(isolate, Local<Script>());
@@ -4406,7 +4404,7 @@ Persistent<Context> v8::Context::New(
     // Create the environment.
     env = isolate->bootstrapper()->CreateEnvironment(
         isolate,
-        Utils::OpenHandle(*global_object),
+        Utils::OpenHandle(*global_object, true),
         proxy_template,
         extensions);
 
@@ -5644,7 +5642,8 @@ bool Debug::SetDebugEventListener(EventCallback that, Handle<Value> data) {
     foreign =
         isolate->factory()->NewForeign(FUNCTION_ADDR(EventCallbackWrapper));
   }
-  isolate->debugger()->SetEventListener(foreign, Utils::OpenHandle(*data));
+  isolate->debugger()->SetEventListener(foreign,
+                                        Utils::OpenHandle(*data, true));
   return true;
 }
 
@@ -5659,7 +5658,8 @@ bool Debug::SetDebugEventListener2(EventCallback2 that, Handle<Value> data) {
   if (that != NULL) {
     foreign = isolate->factory()->NewForeign(FUNCTION_ADDR(that));
   }
-  isolate->debugger()->SetEventListener(foreign, Utils::OpenHandle(*data));
+  isolate->debugger()->SetEventListener(foreign,
+                                        Utils::OpenHandle(*data, true));
   return true;
 }
 
@@ -5670,7 +5670,7 @@ bool Debug::SetDebugEventListener(v8::Handle<v8::Object> that,
   ON_BAILOUT(isolate, "v8::Debug::SetDebugEventListener()", return false);
   ENTER_V8(isolate);
   isolate->debugger()->SetEventListener(Utils::OpenHandle(*that),
-                                                      Utils::OpenHandle(*data));
+                                        Utils::OpenHandle(*data, true));
   return true;
 }
 

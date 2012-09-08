@@ -87,6 +87,7 @@ namespace internal {
   V(Object, instanceof_cache_answer, InstanceofCacheAnswer)                    \
   V(FixedArray, single_character_string_cache, SingleCharacterStringCache)     \
   V(FixedArray, string_split_cache, StringSplitCache)                          \
+  V(FixedArray, regexp_multiple_cache, RegExpMultipleCache)                    \
   V(Object, termination_exception, TerminationException)                       \
   V(Smi, hash_seed, HashSeed)                                                  \
   V(Map, string_map, StringMap)                                                \
@@ -152,6 +153,7 @@ namespace internal {
   V(StringDictionary, intrinsic_function_names, IntrinsicFunctionNames)        \
   V(Smi, arguments_adaptor_deopt_pc_offset, ArgumentsAdaptorDeoptPCOffset)     \
   V(Smi, construct_stub_deopt_pc_offset, ConstructStubDeoptPCOffset)           \
+  V(Smi, getter_stub_deopt_pc_offset, GetterStubDeoptPCOffset)                 \
   V(Smi, setter_stub_deopt_pc_offset, SetterStubDeoptPCOffset)
 
 #define ROOT_LIST(V)                                  \
@@ -1591,6 +1593,11 @@ class Heap {
     set_construct_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
   }
 
+  void SetGetterStubDeoptPCOffset(int pc_offset) {
+    ASSERT(getter_stub_deopt_pc_offset() == Smi::FromInt(0));
+    set_getter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
+  }
+
   void SetSetterStubDeoptPCOffset(int pc_offset) {
     ASSERT(setter_stub_deopt_pc_offset() == Smi::FromInt(0));
     set_setter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
@@ -2582,24 +2589,31 @@ class GCTracer BASE_EMBEDDED {
 };
 
 
-class StringSplitCache {
+class RegExpResultsCache {
  public:
-  static Object* Lookup(FixedArray* cache, String* string, String* pattern);
+  enum ResultsCacheType { REGEXP_MULTIPLE_INDICES, STRING_SPLIT_SUBSTRINGS };
+
+  // Attempt to retrieve a cached result.  On failure, 0 is returned as a Smi.
+  // On success, the returned result is guaranteed to be a COW-array.
+  static Object* Lookup(Heap* heap,
+                        String* key_string,
+                        Object* key_pattern,
+                        ResultsCacheType type);
+  // Attempt to add value_array to the cache specified by type.  On success,
+  // value_array is turned into a COW-array.
   static void Enter(Heap* heap,
-                    FixedArray* cache,
-                    String* string,
-                    String* pattern,
-                    FixedArray* array);
+                    String* key_string,
+                    Object* key_pattern,
+                    FixedArray* value_array,
+                    ResultsCacheType type);
   static void Clear(FixedArray* cache);
-  static const int kStringSplitCacheSize = 0x100;
+  static const int kRegExpResultsCacheSize = 0x100;
 
  private:
   static const int kArrayEntriesPerCacheEntry = 4;
   static const int kStringOffset = 0;
   static const int kPatternOffset = 1;
   static const int kArrayOffset = 2;
-
-  static MaybeObject* WrapFixedArrayInJSArray(Object* fixed_array);
 };
 
 

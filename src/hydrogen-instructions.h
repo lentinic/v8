@@ -1415,6 +1415,7 @@ enum InliningKind {
   NORMAL_RETURN,          // Normal function/method call and return.
   DROP_EXTRA_ON_RETURN,   // Drop an extra value from the environment on return.
   CONSTRUCT_CALL_RETURN,  // Either use allocated receiver or return value.
+  GETTER_CALL_RETURN,     // Returning from a getter, need to restore context.
   SETTER_CALL_RETURN      // Use the RHS of the assignment as the return value.
 };
 
@@ -2068,13 +2069,17 @@ class HUnaryMathOperation: public HTemplateInstruction<2> {
 };
 
 
-class HLoadElements: public HUnaryOperation {
+class HLoadElements: public HTemplateInstruction<2> {
  public:
-  explicit HLoadElements(HValue* value) : HUnaryOperation(value) {
+  HLoadElements(HValue* value, HValue* typecheck) {
+    SetOperandAt(0, value);
+    SetOperandAt(1, typecheck);
     set_representation(Representation::Tagged());
     SetFlag(kUseGVN);
     SetGVNFlag(kDependsOnElementsPointer);
   }
+
+  HValue* value() { return OperandAt(0); }
 
   virtual Representation RequiredInputRepresentation(int index) {
     return Representation::Tagged();

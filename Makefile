@@ -34,6 +34,7 @@ TESTJOBS ?= -j16
 GYPFLAGS ?=
 TESTFLAGS ?=
 ANDROID_NDK_ROOT ?=
+ANDROID_TOOLCHAIN ?=
 ANDROID_V8 ?= /data/local/v8
 
 # Special build flags. Use them like this: "make library=shared"
@@ -60,6 +61,13 @@ endif
 # snapshot=off
 ifeq ($(snapshot), off)
   GYPFLAGS += -Dv8_use_snapshot='false'
+endif
+# extrachecks=on/off
+ifeq ($(extrachecks), on)
+  GYPFLAGS += -Dv8_enable_extra_checks=1
+endif
+ifeq ($(extrachecks), off)
+  GYPFLAGS += -Dv8_enable_extra_checks=0
 endif
 # gdbjit=on
 ifeq ($(gdbjit), on)
@@ -98,6 +106,10 @@ endif
 # regexp=interpreted
 ifeq ($(regexp), interpreted)
   GYPFLAGS += -Dv8_interpreted_regexp=1
+endif
+# hardfp=on
+ifeq ($(hardfp), on)
+  GYPFLAGS += -Dv8_use_arm_eabi_hardfloat=true
 endif
 
 # ----------------- available targets: --------------------
@@ -141,7 +153,7 @@ ENVFILE = $(OUTDIR)/environment
         $(ARCHES) $(MODES) $(BUILDS) $(CHECKS) $(addsuffix .clean,$(ARCHES)) \
         $(addsuffix .check,$(MODES)) $(addsuffix .check,$(ARCHES)) \
         $(ANDROID_ARCHES) $(ANDROID_BUILDS) $(ANDROID_CHECKS) \
-        must-set-ANDROID_NDK_ROOT
+        must-set-ANDROID_NDK_ROOT_OR_TOOLCHAIN
 
 # Target definitions. "all" is the default.
 all: $(MODES)
@@ -178,7 +190,7 @@ native: $(OUTDIR)/Makefile.native
 $(ANDROID_ARCHES): $(addprefix $$@.,$(MODES))
 
 $(ANDROID_BUILDS): $(GYPFILES) $(ENVFILE) build/android.gypi \
-                   must-set-ANDROID_NDK_ROOT Makefile.android
+                   must-set-ANDROID_NDK_ROOT_OR_TOOLCHAIN Makefile.android
 	@$(MAKE) -f Makefile.android $@ \
 	        ARCH="$(basename $@)" \
 	        MODE="$(subst .,,$(suffix $@))" \
@@ -248,9 +260,11 @@ $(OUTDIR)/Makefile.native: $(GYPFILES) $(ENVFILE)
 	build/gyp/gyp --generator-output="$(OUTDIR)" build/all.gyp \
 	              -Ibuild/standalone.gypi --depth=. -S.native $(GYPFLAGS)
 
-must-set-ANDROID_NDK_ROOT:
+must-set-ANDROID_NDK_ROOT_OR_TOOLCHAIN:
 ifndef ANDROID_NDK_ROOT
-	  $(error ANDROID_NDK_ROOT is not set)
+ifndef ANDROID_TOOLCHAIN
+	  $(error ANDROID_NDK_ROOT or ANDROID_TOOLCHAIN must be set))
+endif
 endif
 
 # Replaces the old with the new environment file if they're different, which

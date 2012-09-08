@@ -2539,7 +2539,7 @@ class V8EXPORT Extension {  // NOLINT
   // Note that the strings passed into this constructor must live as long
   // as the Extension itself.
   Extension(const char* name,
-            const char* source,
+            const char* source = 0,
             int dep_count = 0,
             const char** deps = 0,
             int source_length = -1);
@@ -4042,7 +4042,7 @@ class Internals {
   static const int kNullValueRootIndex = 7;
   static const int kTrueValueRootIndex = 8;
   static const int kFalseValueRootIndex = 9;
-  static const int kEmptySymbolRootIndex = 114;
+  static const int kEmptySymbolRootIndex = 116;
 
   static const int kJSObjectType = 0xaa;
   static const int kFirstNonstringType = 0x80;

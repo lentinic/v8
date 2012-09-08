@@ -132,7 +132,7 @@ public:
 
 // Flags for language modes and experimental language features.
 DEFINE_bool(use_strict, false, "enforce strict mode")
-DEFINE_bool(es5_readonly, false,
+DEFINE_bool(es5_readonly, true,
             "activate correct semantics for inheriting readonliness")
 DEFINE_bool(es52_globals, true,
             "activate new semantics for global var declarations")
@@ -633,7 +633,8 @@ DEFINE_bool(sliding_state_window, false,
             "Update sliding state window counters.")
 DEFINE_string(logfile, "v8.log", "Specify the name of the log file.")
 DEFINE_bool(ll_prof, false, "Enable low-level linux profiler.")
-
+DEFINE_string(gc_fake_mmap, "/tmp/__v8_gc__",
+              "Specify the name of the file for fake gc mmap used in ll_prof")
 
 //
 // Disassembler only flags
